@@ -3,17 +3,6 @@
 -- Run this entire file in the Supabase SQL Editor.
 -- ================================================================
 
--- ----------------------------------------------------------------
--- HELPER: check if current user is the owner
--- ----------------------------------------------------------------
-CREATE OR REPLACE FUNCTION is_owner()
-RETURNS boolean AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM employees
-    WHERE id = auth.uid() AND is_owner = TRUE
-  );
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
-
 -- ================================================================
 -- EMPLOYEES
 -- (id = auth.users.id — managed via Vercel API routes)
@@ -30,6 +19,18 @@ CREATE TABLE IF NOT EXISTS employees (
 );
 
 ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
+
+-- ----------------------------------------------------------------
+-- HELPER: check if current user is the owner
+-- (must be created AFTER the employees table)
+-- ----------------------------------------------------------------
+CREATE OR REPLACE FUNCTION is_owner()
+RETURNS boolean AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM employees
+    WHERE id = auth.uid() AND is_owner = TRUE
+  );
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
 
 CREATE POLICY "authenticated_read_employees" ON employees
   FOR SELECT USING (auth.role() = 'authenticated');
@@ -167,7 +168,7 @@ CREATE POLICY "employee_write_own_availability" ON availabilities
 -- ================================================================
 -- After running this schema, create the owner account:
 --
--- 1. Go to Supabase Dashboard → Authentication → Users → Invite user
+-- 1. Go to Supabase Dashboard → Authentication → Users → Add user → Create new user
 --    Email: sohn@sushirevolution.internal
 --    Password: 88888888
 --

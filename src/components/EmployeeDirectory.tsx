@@ -15,7 +15,6 @@ import {
   getEmployeeAvailability,
   roleLabels,
   roleStyles,
-  summarizeAvailability,
 } from "../utils/schedule";
 
 interface EmployeeDirectoryProps {
@@ -35,6 +34,12 @@ interface EmployeeDirectoryProps {
 
 const payLevels: PayLevel[] = [0, 1, 2, 3, 4];
 
+const inputClass =
+  "h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100";
+
+const inputErrorClass =
+  "h-10 w-full rounded-lg border border-rose-300 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100";
+
 export function EmployeeDirectory({
   availabilities,
   employees,
@@ -46,7 +51,6 @@ export function EmployeeDirectory({
   payLevelRates,
   weekStart,
 }: EmployeeDirectoryProps) {
-  // Add form state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newRoles, setNewRoles] = useState<Role[]>([]);
@@ -56,7 +60,6 @@ export function EmployeeDirectory({
   const [isAdding, setIsAdding] = useState(false);
   const [addError, setAddError] = useState("");
 
-  // Edit form state
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editRoles, setEditRoles] = useState<Role[]>([]);
@@ -66,7 +69,6 @@ export function EmployeeDirectory({
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState("");
 
-  // Delete state
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
@@ -74,10 +76,8 @@ export function EmployeeDirectory({
     const trimmedName = newName.trim();
     if (!trimmedName || newRoles.length === 0 || !newPassword) return;
     if (newPassword !== newPasswordConfirm) return;
-
     setIsAdding(true);
     setAddError("");
-
     try {
       await onAddEmployee(trimmedName, newRoles, newLevel, newPassword);
       setNewName("");
@@ -108,10 +108,8 @@ export function EmployeeDirectory({
   async function handleEditSave() {
     if (!editingId || !editName.trim() || editRoles.length === 0) return;
     if (editPassword && editPassword !== editPasswordConfirm) return;
-
     setIsSaving(true);
     setEditError("");
-
     try {
       await onEditEmployee(editingId, {
         name: editName.trim(),
@@ -160,20 +158,21 @@ export function EmployeeDirectory({
 
   return (
     <div className="space-y-4">
+
       {/* Pay level rates */}
-      <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-1">
-          <h3 className="text-base font-black text-slate-950">Pay level rates</h3>
-          <p className="text-sm text-slate-500">Set the hourly wage for each level.</p>
+      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-slate-900">Pay level rates</h3>
+          <p className="mt-0.5 text-xs text-slate-500">Hourly wage per level.</p>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {payLevels.map((level) => (
             <label className="rounded-lg border border-slate-200 bg-slate-50 p-3" key={level}>
-              <span className="text-xs font-black text-slate-500">Level {level}</span>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-sm font-bold text-slate-500">$</span>
+              <span className="text-xs font-bold text-slate-400">Level {level}</span>
+              <div className="mt-2 flex items-center gap-1.5">
+                <span className="text-sm font-semibold text-slate-400">$</span>
                 <input
-                  className="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                  className="h-9 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-2.5 text-sm font-bold text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                   min={0}
                   onChange={(e) => onUpdatePayLevelRate(level, Number(e.target.value))}
                   step={0.5}
@@ -188,7 +187,9 @@ export function EmployeeDirectory({
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-900">Staff ({employees.length})</h3>
+        <p className="text-sm font-semibold text-slate-500">
+          {employees.length} staff members
+        </p>
         <Button
           onClick={() => {
             setShowAddForm((v) => !v);
@@ -199,20 +200,20 @@ export function EmployeeDirectory({
           size="sm"
           variant={showAddForm ? "secondary" : "primary"}
         >
-          {showAddForm ? "Cancel" : "Add employee"}
+          {showAddForm ? "Cancel" : "+ Add employee"}
         </Button>
       </div>
 
       {/* Add employee form */}
       {showAddForm ? (
-        <section className="rounded-lg border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
-          <h4 className="text-sm font-bold text-indigo-900">New employee</h4>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <label className="text-sm font-semibold text-slate-700">
+        <section className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-5 shadow-sm">
+          <h4 className="mb-4 text-sm font-bold text-indigo-900">New employee</h4>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Name
               <input
                 autoFocus
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                className={cn("mt-1.5", inputClass)}
                 disabled={isAdding}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="Full name"
@@ -220,10 +221,10 @@ export function EmployeeDirectory({
                 value={newName}
               />
             </label>
-            <label className="text-sm font-semibold text-slate-700">
+            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Pay level
               <select
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                className={cn("mt-1.5 font-bold", inputClass)}
                 disabled={isAdding}
                 onChange={(e) => setNewLevel(Number(e.target.value) as PayLevel)}
                 value={newLevel}
@@ -235,10 +236,10 @@ export function EmployeeDirectory({
                 ))}
               </select>
             </label>
-            <label className="text-sm font-semibold text-slate-700">
+            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Password
               <input
-                className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                className={cn("mt-1.5", inputClass)}
                 disabled={isAdding}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Login password"
@@ -246,15 +247,10 @@ export function EmployeeDirectory({
                 value={newPassword}
               />
             </label>
-            <label className="text-sm font-semibold text-slate-700">
+            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Confirm password
               <input
-                className={cn(
-                  "mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-2",
-                  passwordMismatchAdd
-                    ? "border-red-300 focus:border-red-400 focus:ring-red-200"
-                    : "border-slate-200 focus:border-slate-400 focus:ring-slate-200",
-                )}
+                className={cn("mt-1.5", passwordMismatchAdd ? inputErrorClass : inputClass)}
                 disabled={isAdding}
                 onChange={(e) => setNewPasswordConfirm(e.target.value)}
                 placeholder="Re-enter password"
@@ -262,20 +258,23 @@ export function EmployeeDirectory({
                 value={newPasswordConfirm}
               />
               {passwordMismatchAdd ? (
-                <span className="mt-1 text-xs text-red-600">Passwords do not match.</span>
+                <span className="mt-1 block text-xs font-medium text-rose-600">
+                  Passwords do not match.
+                </span>
               ) : null}
             </label>
           </div>
-          <div className="mt-3">
-            <p className="text-sm font-semibold text-slate-700">Roles</p>
+
+          <div className="mt-4">
+            <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Roles</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {ROLES.map((role) => (
                 <button
                   className={cn(
-                    "rounded-md border px-3 py-1.5 text-sm font-semibold transition",
+                    "rounded-lg border px-3 py-1.5 text-sm font-semibold transition",
                     newRoles.includes(role)
-                      ? roleStyles[role].badge + " border-current"
-                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                      ? roleStyles[role].badge
+                      : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-700",
                   )}
                   disabled={isAdding}
                   key={role}
@@ -296,12 +295,14 @@ export function EmployeeDirectory({
               <p className="mt-1.5 text-xs text-slate-400">Select at least one role.</p>
             ) : null}
           </div>
+
           {addError ? (
-            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
               {addError}
             </p>
           ) : null}
-          <div className="mt-4 flex justify-end">
+
+          <div className="mt-5 flex justify-end">
             <Button disabled={!canAdd || isAdding} onClick={handleAddSubmit}>
               {isAdding ? "Adding…" : "Add employee"}
             </Button>
@@ -310,16 +311,16 @@ export function EmployeeDirectory({
       ) : null}
 
       {/* Staff table */}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table className="w-full min-w-[900px] border-collapse text-left">
+      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full min-w-[820px] border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 bg-slate-50 text-sm text-slate-600">
-              <th className="px-4 py-3 font-bold">Employee</th>
-              <th className="px-4 py-3 font-bold">Roles</th>
-              <th className="px-4 py-3 font-bold">Level</th>
-              <th className="px-4 py-3 font-bold">Hourly rate</th>
-              <th className="px-4 py-3 font-bold">Weekly availability</th>
-              <th className="px-4 py-3 font-bold"></th>
+            <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wide text-slate-400">
+              <th className="px-4 py-3">Employee</th>
+              <th className="px-4 py-3">Roles</th>
+              <th className="px-4 py-3">Level</th>
+              <th className="px-4 py-3">Rate</th>
+              <th className="px-4 py-3">Availability this week</th>
+              <th className="px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -332,17 +333,20 @@ export function EmployeeDirectory({
 
               return (
                 <>
-                  <tr key={employee.id}>
-                    <td className="px-4 py-4 align-top">
-                      <p className="font-bold text-slate-950">{employee.name}</p>
-                      <p className="mt-1 text-xs text-slate-500">@{employee.username}</p>
+                  <tr
+                    className={cn("transition", isEditing ? "bg-indigo-50/40" : "hover:bg-slate-50/70")}
+                    key={employee.id}
+                  >
+                    <td className="px-4 py-3.5 align-middle">
+                      <p className="font-semibold text-slate-900">{employee.name}</p>
+                      <p className="mt-0.5 text-xs text-slate-400">@{employee.username}</p>
                     </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex flex-wrap gap-1.5">
+                    <td className="px-4 py-3.5 align-middle">
+                      <div className="flex flex-wrap gap-1">
                         {employee.roles.map((role) => (
                           <span
                             className={cn(
-                              "inline-flex rounded-md border px-2 py-1 text-xs font-semibold",
+                              "inline-flex rounded-md border px-2 py-0.5 text-xs font-semibold",
                               roleStyles[role].badge,
                             )}
                             key={role}
@@ -352,80 +356,85 @@ export function EmployeeDirectory({
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-4 py-3.5 align-middle">
                       <select
-                        className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                        className="h-9 rounded-lg border border-slate-200 bg-slate-50 px-2.5 text-sm font-bold text-slate-800 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
                         onChange={(e) =>
                           onUpdateEmployeeLevel(employee.id, Number(e.target.value) as PayLevel)
                         }
                         value={employee.level}
                       >
                         {payLevels.map((level) => (
-                          <option key={level} value={level}>
-                            Level {level}
-                          </option>
+                          <option key={level} value={level}>Lv {level}</option>
                         ))}
                       </select>
                     </td>
-                    <td className="px-4 py-4 align-top text-sm">
-                      <p className="font-black text-slate-950">{formatMoney(hourlyRate)}</p>
-                      <p className="mt-1 text-xs text-slate-500">From level {employee.level}</p>
+                    <td className="px-4 py-3.5 align-middle">
+                      <p className="font-bold text-slate-900">{formatMoney(hourlyRate)}/h</p>
                     </td>
-                    <td className="px-4 py-4 align-top">
+                    <td className="px-4 py-3.5 align-middle">
                       {availability ? (
-                        <div>
-                          <p className="mb-2 text-sm text-slate-600">
-                            {summarizeAvailability(availability.days)}
-                          </p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {DAYS.map((day) => (
-                              <span
-                                className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700"
-                                key={day.key}
-                              >
-                                {day.label}: {availabilityLabels[availability.days[day.key]]}
-                              </span>
-                            ))}
-                          </div>
+                        <div className="flex gap-1">
+                          {DAYS.map((day) => {
+                            const val = availability.days[day.key];
+                            return (
+                              <div key={day.key} className="flex flex-col items-center gap-1">
+                                <span className="text-[10px] font-bold text-slate-400">
+                                  {day.label[0]}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "h-5 w-5 rounded-md text-[9px] font-bold flex items-center justify-center",
+                                    val === "full day"
+                                      ? "bg-indigo-100 text-indigo-700"
+                                      : val === "morning"
+                                      ? "bg-amber-100 text-amber-700"
+                                      : val === "night"
+                                      ? "bg-slate-200 text-slate-600"
+                                      : "bg-slate-100 text-slate-300",
+                                  )}
+                                  title={availabilityLabels[val]}
+                                >
+                                  {val === "full day" ? "F" : val === "morning" ? "M" : val === "night" ? "N" : "—"}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       ) : (
-                        <span className="text-sm text-slate-400">No availability submitted</span>
+                        <span className="text-xs text-slate-400">Not submitted</span>
                       )}
                     </td>
-                    <td className="px-4 py-4 align-top">
-                      <div className="flex flex-col gap-1.5">
+                    <td className="px-4 py-3.5 align-middle">
+                      <div className="flex items-center gap-1.5">
                         <button
                           className={cn(
-                            "rounded-lg border px-3 py-1.5 text-xs font-bold transition",
+                            "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
                             isEditing
-                              ? "border-indigo-300 bg-indigo-50 text-indigo-700"
-                              : "border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-700",
+                              ? "border-indigo-200 bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+                              : "border-slate-200 bg-white text-slate-600 hover:border-indigo-200 hover:text-indigo-700",
                           )}
                           onClick={() => (isEditing ? setEditingId(null) : startEdit(employee))}
                           type="button"
                         >
-                          {isEditing ? "Cancel edit" : "Edit"}
+                          {isEditing ? "Cancel" : "Edit"}
                         </button>
                         <button
                           className={cn(
-                            "rounded-lg border px-3 py-1.5 text-xs font-bold transition",
+                            "rounded-lg border px-3 py-1.5 text-xs font-semibold transition",
                             isConfirmingDelete
-                              ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
-                              : "border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-600",
+                              ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                              : "border-slate-200 bg-white text-slate-500 hover:border-rose-200 hover:text-rose-600",
                           )}
                           disabled={isDeleting}
                           onClick={() => handleDeleteClick(employee.id)}
                           type="button"
                         >
-                          {isDeleting
-                            ? "Deleting…"
-                            : isConfirmingDelete
-                              ? "Confirm delete"
-                              : "Delete"}
+                          {isDeleting ? "…" : isConfirmingDelete ? "Confirm?" : "Delete"}
                         </button>
                         {isConfirmingDelete && !isDeleting ? (
                           <button
-                            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-500 transition hover:bg-slate-50"
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-slate-50"
                             onClick={() => setConfirmDeleteId(null)}
                             type="button"
                           >
@@ -439,26 +448,26 @@ export function EmployeeDirectory({
                   {/* Inline edit panel */}
                   {isEditing ? (
                     <tr key={`${employee.id}-edit`}>
-                      <td className="bg-indigo-50 px-4 py-4" colSpan={6}>
-                        <p className="mb-3 text-sm font-bold text-indigo-900">
-                          Edit — {employee.name}
+                      <td className="border-t border-indigo-100 bg-indigo-50/60 px-5 py-5" colSpan={6}>
+                        <p className="mb-4 text-xs font-bold uppercase tracking-wide text-indigo-600">
+                          Editing — {employee.name}
                         </p>
                         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                          <label className="text-sm font-semibold text-slate-700">
+                          <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
                             Name
                             <input
                               autoFocus
-                              className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                              className={cn("mt-1.5", inputClass)}
                               disabled={isSaving}
                               onChange={(e) => setEditName(e.target.value)}
                               type="text"
                               value={editName}
                             />
                           </label>
-                          <label className="text-sm font-semibold text-slate-700">
+                          <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
                             Pay level
                             <select
-                              className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                              className={cn("mt-1.5 font-bold", inputClass)}
                               disabled={isSaving}
                               onChange={(e) => setEditLevel(Number(e.target.value) as PayLevel)}
                               value={editLevel}
@@ -470,26 +479,21 @@ export function EmployeeDirectory({
                               ))}
                             </select>
                           </label>
-                          <label className="text-sm font-semibold text-slate-700">
+                          <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
                             New password
                             <input
-                              className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                              className={cn("mt-1.5", inputClass)}
                               disabled={isSaving}
                               onChange={(e) => setEditPassword(e.target.value)}
-                              placeholder="Leave blank to keep current"
+                              placeholder="Leave blank to keep"
                               type="password"
                               value={editPassword}
                             />
                           </label>
-                          <label className="text-sm font-semibold text-slate-700">
+                          <label className="text-xs font-bold uppercase tracking-wide text-slate-500">
                             Confirm password
                             <input
-                              className={cn(
-                                "mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm text-slate-900 outline-none transition focus:ring-2",
-                                passwordMismatchEdit
-                                  ? "border-red-300 focus:border-red-400 focus:ring-red-200"
-                                  : "border-slate-200 focus:border-slate-400 focus:ring-slate-200",
-                              )}
+                              className={cn("mt-1.5", passwordMismatchEdit ? inputErrorClass : inputClass)}
                               disabled={isSaving}
                               onChange={(e) => setEditPasswordConfirm(e.target.value)}
                               placeholder="Re-enter new password"
@@ -497,23 +501,23 @@ export function EmployeeDirectory({
                               value={editPasswordConfirm}
                             />
                             {passwordMismatchEdit ? (
-                              <span className="mt-1 text-xs text-red-600">
+                              <span className="mt-1 block text-xs font-medium text-rose-600">
                                 Passwords do not match.
                               </span>
                             ) : null}
                           </label>
                         </div>
 
-                        <div className="mt-3">
-                          <p className="text-sm font-semibold text-slate-700">Roles</p>
+                        <div className="mt-4">
+                          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Roles</p>
                           <div className="mt-2 flex flex-wrap gap-2">
                             {ROLES.map((role) => (
                               <button
                                 className={cn(
-                                  "rounded-md border px-3 py-1.5 text-sm font-semibold transition",
+                                  "rounded-lg border px-3 py-1.5 text-sm font-semibold transition",
                                   editRoles.includes(role)
-                                    ? roleStyles[role].badge + " border-current"
-                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300",
+                                    ? roleStyles[role].badge
+                                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-300",
                                 )}
                                 disabled={isSaving}
                                 key={role}
@@ -531,19 +535,17 @@ export function EmployeeDirectory({
                             ))}
                           </div>
                           {editRoles.length === 0 ? (
-                            <p className="mt-1.5 text-xs text-slate-400">
-                              Select at least one role.
-                            </p>
+                            <p className="mt-1.5 text-xs text-slate-400">Select at least one role.</p>
                           ) : null}
                         </div>
 
                         {editError ? (
-                          <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                          <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                             {editError}
                           </p>
                         ) : null}
 
-                        <div className="mt-4 flex gap-2">
+                        <div className="mt-5 flex gap-2">
                           <Button disabled={!canSaveEdit || isSaving} onClick={handleEditSave}>
                             {isSaving ? "Saving…" : "Save changes"}
                           </Button>

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  color: #172033;
+  color: #1e293b;
   background: #f8fafc;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -17,6 +17,7 @@
 
 html {
   min-width: 320px;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -27,6 +28,33 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Input base — consistent across app */
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="time"],
+select {
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
 }
