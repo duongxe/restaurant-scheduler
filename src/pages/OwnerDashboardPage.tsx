@@ -96,33 +96,39 @@ export function OwnerDashboardPage({
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-6 text-slate-900">
       <div className="mx-auto max-w-[1760px]">
-        <header className="mb-5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <Button onClick={onBack} size="sm" variant="ghost">
-                Back to login
-              </Button>
-              <p className="mt-4 text-sm font-bold text-slate-500">
-                Owner dashboard
-              </p>
-              <h1 className="mt-1 text-3xl font-bold text-slate-900">
-                Sushi Revolution Roster
-              </h1>
-              <p className="mt-2 text-sm text-slate-600">
-                Manual roster planning for {formatWeekRange(weekStart)}.
-              </p>
+        <header className="mb-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
+                <svg fill="none" height="20" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="20">
+                  <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight text-slate-900">
+                  Sushi Revolution Roster
+                </h1>
+                <p className="text-sm text-slate-500">
+                  {formatWeekRange(weekStart)}
+                </p>
+              </div>
             </div>
-            <WeekSelector onChange={onWeekChange} weekStart={weekStart} />
+            <div className="flex items-center gap-3">
+              <WeekSelector onChange={onWeekChange} weekStart={weekStart} />
+              <Button onClick={onBack} size="sm" variant="secondary">
+                Sign out
+              </Button>
+            </div>
           </div>
 
-          <nav className="flex flex-wrap gap-2 border-t border-slate-200 bg-slate-50 px-5 py-3">
+          <nav className="flex border-t border-slate-200">
             {tabs.map((tab) => (
               <button
                 className={cn(
-                  "min-h-10 rounded-lg border px-4 text-sm font-bold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500",
+                  "relative px-5 py-3 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500",
                   activeTab === tab.id
-                    ? "border-indigo-200 bg-indigo-50 text-indigo-800 shadow-sm"
-                    : "border-transparent bg-transparent text-slate-600 hover:bg-white",
+                    ? "text-indigo-700 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-indigo-600"
+                    : "text-slate-500 hover:text-slate-900",
                 )}
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}

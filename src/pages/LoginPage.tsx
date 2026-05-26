@@ -29,29 +29,27 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-4 py-8 text-slate-900">
-      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-4xl flex-col justify-center">
-        <div className="mb-8">
-          <p className="text-sm font-bold text-slate-500">Staff roster</p>
-          <h1 className="mt-2 text-4xl font-bold text-slate-900 sm:text-5xl">
-            Sushi Revolution Roster
-          </h1>
-          <p className="mt-3 max-w-2xl text-base text-slate-600">
-            Sign in with your username (lowercase, no spaces) and password.
-          </p>
+    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 text-slate-900">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
+            <svg fill="none" height="24" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="24">
+              <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900">Sushi Revolution</h1>
+          <p className="mt-1 text-sm text-slate-500">Staff Roster</p>
         </div>
 
         <form
-          className="max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+          className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
           onSubmit={handleSubmit}
         >
-          <h2 className="text-xl font-bold text-slate-900">Login</h2>
-
-          <label className="mt-6 block text-sm font-semibold text-slate-700">
+          <label className="block text-sm font-semibold text-slate-700">
             Username
             <input
               autoComplete="username"
-              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
               disabled={isLoading}
               onChange={(event) =>
                 setUsername(event.target.value.toLowerCase().replace(/\s+/g, ""))
@@ -65,7 +63,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             Password
             <input
               autoComplete="current-password"
-              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
               disabled={isLoading}
               onChange={(event) => setPassword(event.target.value)}
               type="password"
