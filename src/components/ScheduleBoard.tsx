@@ -18,7 +18,6 @@ import {
   roleLabels,
   roleStyles,
   shiftLabels,
-  shiftTimeLabels,
 } from "../utils/schedule";
 
 interface ScheduleBoardProps {
@@ -45,7 +44,7 @@ export function ScheduleBoard({
   return (
     <div className="min-w-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
-        <div className="grid min-w-[1120px] grid-cols-7 divide-x divide-slate-200">
+        <div className="grid min-w-[1120px] grid-cols-7 divide-x divide-slate-300">
           {DAYS.map((day) => (
             <DayColumn
               day={day}
@@ -97,8 +96,8 @@ function DayColumn({
     );
 
   return (
-    <section className={cn("min-h-full", isPublicHoliday ? "bg-orange-50/60" : "bg-slate-50/70")}>
-      <div className={cn("border-b px-3 py-3", isPublicHoliday ? "border-orange-200 bg-orange-50" : "border-slate-200 bg-white")}>
+    <section className={cn("min-h-full", isPublicHoliday ? "bg-orange-50/60" : "bg-white")}>
+      <div className={cn("border-b-2 px-3 py-3", isPublicHoliday ? "border-orange-300 bg-orange-50" : "border-slate-200 bg-slate-50")}>
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-sm font-bold text-slate-900">{day.label}</p>
@@ -132,7 +131,7 @@ function DayColumn({
         </div>
       </div>
 
-      <div className="space-y-2 p-2">
+      <div className="divide-y divide-slate-200">
         {ROLES.map((role) => (
           <RoleGroup
             day={day.key}
@@ -144,11 +143,13 @@ function DayColumn({
             selectedShift={selectedShift}
           />
         ))}
-        <NightEndControl
-          day={day.key}
-          endTime={getDayNightEndTime(schedule, day.key)}
-          onUpdateDayNightEnd={onUpdateDayNightEnd}
-        />
+        <div className="p-2">
+          <NightEndControl
+            day={day.key}
+            endTime={getDayNightEndTime(schedule, day.key)}
+            onUpdateDayNightEnd={onUpdateDayNightEnd}
+          />
+        </div>
       </div>
     </section>
   );
@@ -203,18 +204,16 @@ function RoleGroup({
   selectedShift,
 }: RoleGroupProps) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-2">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            "inline-flex min-h-7 items-center rounded-md border px-3 py-1 text-xs font-bold",
-            roleStyles[role].badge,
-          )}
-        >
-          {roleLabels[role]}
-        </span>
-      </div>
-      <div className="space-y-2">
+    <div className="p-2 space-y-1.5">
+      <span
+        className={cn(
+          "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-bold",
+          roleStyles[role].badge,
+        )}
+      >
+        {roleLabels[role]}
+      </span>
+      <div className="space-y-1.5">
         {SHIFT_TYPES.map((shiftType) => (
           <ShiftCard
             day={day}
@@ -273,14 +272,9 @@ function ShiftCard({
       type="button"
     >
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-bold text-slate-900">
-            {shiftLabels[shiftType]}
-          </p>
-          <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-            {shiftTimeLabels[shiftType]}
-          </p>
-        </div>
+        <p className="text-xs font-bold text-slate-900">
+          {shiftLabels[shiftType]}
+        </p>
         <span
           className={cn(
             "rounded-md px-1.5 py-0.5 text-[11px] font-bold",
