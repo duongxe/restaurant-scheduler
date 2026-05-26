@@ -50,14 +50,11 @@ export function PayrollSummary({
         (row) => `
       <tr>
         <td>${row.employee.name}<br/><span style="font-size:10px;color:#64748b">${row.employee.roles.map((r) => roleLabels[r]).join(", ")}</span></td>
-        <td>${formatHours(row.scheduledHours)}h</td>
-        <td>${formatHours(row.breakHours)}h</td>
         <td>${formatHours(row.weekdayHours)}h<br/><span style="font-size:10px;color:#64748b">${formatMoney(row.weekdayPay)}</span></td>
         <td>${formatHours(row.saturdayHours)}h<br/><span style="font-size:10px;color:#64748b">${formatMoney(row.saturdayPay)}</span></td>
         <td>${formatHours(row.sundayHours)}h<br/><span style="font-size:10px;color:#64748b">${formatMoney(row.sundayPay)}</span></td>
         <td>${formatHours(row.publicHolidayHours)}h<br/><span style="font-size:10px;color:#64748b">${formatMoney(row.publicHolidayPay)}</span></td>
         <td><strong>${formatHours(row.paidHours)}h</strong></td>
-        <td>${formatMoney(row.hourlyRate)}/h</td>
         <td style="text-align:right"><strong>${formatMoney(row.grossPay)}</strong></td>
       </tr>`,
       )
@@ -96,8 +93,6 @@ export function PayrollSummary({
   <p class="subtitle">${weekLabel}</p>
 
   <div class="metrics">
-    <div class="metric"><div class="metric-label">Scheduled</div><div class="metric-value">${formatHours(totals.scheduledHours)}h</div></div>
-    <div class="metric"><div class="metric-label">Unpaid break</div><div class="metric-value">${formatHours(totals.breakHours)}h</div></div>
     <div class="metric"><div class="metric-label">Paid hours</div><div class="metric-value">${formatHours(totals.paidHours)}h</div></div>
     <div class="metric"><div class="metric-label">Estimated total</div><div class="metric-value">${formatMoney(totals.grossPay)}</div></div>
   </div>
@@ -106,14 +101,11 @@ export function PayrollSummary({
     <thead>
       <tr>
         <th>Employee</th>
-        <th>Scheduled</th>
-        <th>Break</th>
         <th>Weekday</th>
         <th>Saturday</th>
         <th>Sunday</th>
         <th>Public Holiday</th>
         <th>Paid hours</th>
-        <th>Base rate</th>
         <th style="text-align:right">Estimated pay</th>
       </tr>
     </thead>
@@ -121,14 +113,11 @@ export function PayrollSummary({
       ${tableRows}
       <tr class="total-row">
         <td>Total</td>
-        <td>${formatHours(totals.scheduledHours)}h</td>
-        <td>${formatHours(totals.breakHours)}h</td>
         <td>${formatHours(totals.weekdayHours)}h</td>
         <td>${formatHours(totals.saturdayHours)}h</td>
         <td>${formatHours(totals.sundayHours)}h</td>
         <td>${formatHours(totals.publicHolidayHours)}h</td>
         <td>${formatHours(totals.paidHours)}h</td>
-        <td>—</td>
         <td style="text-align:right">${formatMoney(totals.grossPay)}</td>
       </tr>
     </tbody>
@@ -210,15 +199,7 @@ export function PayrollSummary({
         </div>
       </section>
 
-      <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <PayrollMetric
-          label="Scheduled"
-          value={`${formatHours(totals.scheduledHours)}h`}
-        />
-        <PayrollMetric
-          label="Unpaid break"
-          value={`${formatHours(totals.breakHours)}h`}
-        />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <PayrollMetric
           label="Paid hours"
           value={`${formatHours(totals.paidHours)}h`}
@@ -266,18 +247,15 @@ export function PayrollSummary({
 
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="min-w-[1040px] w-full text-left text-sm">
+          <table className="min-w-[760px] w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-bold">Employee</th>
-                <th className="px-4 py-3 font-bold">Scheduled</th>
-                <th className="px-4 py-3 font-bold">Break</th>
                 <th className="px-4 py-3 font-bold">Weekday</th>
                 <th className="px-4 py-3 font-bold">Saturday</th>
                 <th className="px-4 py-3 font-bold">Sunday</th>
                 <th className="px-4 py-3 font-bold text-orange-700">Public Holiday</th>
                 <th className="px-4 py-3 font-bold">Paid hours</th>
-                <th className="px-4 py-3 font-bold">Base rate</th>
                 <th className="px-4 py-3 text-right font-bold">Estimated pay</th>
               </tr>
             </thead>
@@ -301,12 +279,6 @@ export function PayrollSummary({
                         </span>
                       ))}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatHours(row.scheduledHours)}h
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatHours(row.breakHours)}h
                   </td>
                   <td className="px-4 py-3 text-slate-700">
                     <PayrollDayCell
@@ -338,9 +310,6 @@ export function PayrollSummary({
                   </td>
                   <td className="px-4 py-3 font-bold text-slate-900">
                     {formatHours(row.paidHours)}h
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
-                    {formatMoney(row.hourlyRate)}/h
                   </td>
                   <td className="px-4 py-3 text-right text-base font-bold text-slate-900">
                     {formatMoney(row.grossPay)}
