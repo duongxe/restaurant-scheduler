@@ -50,25 +50,25 @@ export const roleStyles: Record<
   { section: string; badge: string; border: string; shift: string; text: string }
 > = {
   waiter: {
-    section: "bg-emerald-100/70 border-emerald-300",
-    badge: "bg-emerald-200 text-emerald-950 border-emerald-300",
-    border: "border-emerald-300",
-    shift: "bg-emerald-50 border-emerald-300",
-    text: "text-emerald-800",
+    section: "bg-slate-50 border-slate-200",
+    badge: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    border: "border-emerald-200",
+    shift: "bg-white border-slate-200",
+    text: "text-emerald-700",
   },
   "sushi maker": {
-    section: "bg-sky-100/70 border-sky-300",
-    badge: "bg-sky-200 text-sky-950 border-sky-300",
-    border: "border-sky-300",
-    shift: "bg-sky-50 border-sky-300",
-    text: "text-sky-800",
+    section: "bg-slate-50 border-slate-200",
+    badge: "bg-sky-50 text-sky-800 border-sky-200",
+    border: "border-sky-200",
+    shift: "bg-white border-slate-200",
+    text: "text-sky-700",
   },
   kitchen: {
-    section: "bg-amber-100/80 border-amber-300",
-    badge: "bg-amber-200 text-amber-950 border-amber-300",
-    border: "border-amber-300",
-    shift: "bg-amber-50 border-amber-300",
-    text: "text-amber-800",
+    section: "bg-slate-50 border-slate-200",
+    badge: "bg-amber-50 text-amber-800 border-amber-200",
+    border: "border-amber-200",
+    shift: "bg-white border-slate-200",
+    text: "text-amber-700",
   },
 };
 
