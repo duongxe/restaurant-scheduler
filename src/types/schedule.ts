@@ -29,10 +29,22 @@ export interface Employee {
   id: string;
   name: string;
   role: Role;
+  roles: Role[];
+  username: string;
+  email: string;
+  phone: string;
   level: PayLevel;
+  password: string;
 }
 
 export type PayLevelRates = Record<PayLevel, number>;
+
+export interface PenaltyRates {
+  weekday: number;
+  saturday: number;
+  sunday: number;
+  publicHoliday: number;
+}
 
 export interface Availability {
   employeeId: string;
@@ -44,6 +56,8 @@ export interface AssignedShiftEmployee {
   employeeId: string;
   startTime: string;
   endTime: string;
+  breakHours: number;
+  breakEdited?: boolean;
 }
 
 export interface ShiftAssignment {
@@ -58,10 +72,26 @@ export interface WeekSchedule {
   weekStart: string;
   assignments: ShiftAssignment[];
   nightEndTimes?: Partial<Record<DayKey, string>>;
+  publicHolidays?: DayKey[];
 }
 
 export interface ShiftSelection {
   day: DayKey;
   role: Role;
   shiftType: ShiftType;
+}
+
+export interface EmployeeScheduleShift {
+  id: string;
+  day: DayKey;
+  role: Role;
+  shiftType: ShiftType;
+  startTime: string;
+  endTime: string;
+  breakHours: number;
+}
+
+export interface EmployeeScheduleSummary {
+  employee: Employee;
+  shifts: EmployeeScheduleShift[];
 }

@@ -9,12 +9,15 @@ import { cn } from "../utils/classNames";
 import {
   availabilityLabels,
   availabilitySupportsShift,
+  calculateShiftHours,
+  formatHours,
   formatShiftTimeRange,
   getAssignedEmployeeEntries,
   getAssignedShiftLabels,
   getAssignment,
   getDayLabel,
   getEmployeeAvailabilityValue,
+  getOverlappingShiftLabels,
   normalizeRestaurantTime,
   roleLabels,
   roleStyles,
@@ -28,6 +31,7 @@ interface ShiftAssignmentPanelProps {
   onAssign: (employeeId: string) => void;
   onClose: () => void;
   onRemove: (employeeId: string) => void;
+  onUpdateEmployeeBreak: (employeeId: string, breakHours: number) => void;
   onUpdateEmployeeTime: (
     employeeId: string,
     startTime: string,
@@ -44,6 +48,7 @@ export function ShiftAssignmentPanel({
   onAssign,
   onClose,
   onRemove,
+  onUpdateEmployeeBreak,
   onUpdateEmployeeTime,
   schedule,
   selection,
@@ -76,6 +81,11 @@ export function ShiftAssignmentPanel({
           employee.id,
           selection.day,
         ),
+        overlappingShiftLabels: getOverlappingShiftLabels(
+          schedule,
+          employee.id,
+          selection,
+        ),
         assignedToThisShift:
           assignment?.assignedEmployees.some(
             (assignedEmployee) => assignedEmployee.employeeId === employee.id,
@@ -84,7 +94,8 @@ export function ShiftAssignmentPanel({
     })
     .filter(
       (candidate) =>
-        candidate.employee.role === selection.role && candidate.supportsShift,
+        candidate.employee.roles.includes(selection.role) &&
+        candidate.supportsShift,
     )
     .sort((a, b) => a.employee.name.localeCompare(b.employee.name));
 
@@ -93,22 +104,27 @@ export function ShiftAssignmentPanel({
       aria-label="Assign shift"
       className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
     >
-      <div className="border-b border-slate-200 bg-slate-950 px-4 py-4 text-white">
+      <div
+        className={cn(
+          "border-b px-3 py-3",
+          roleStyles[selection.role].section,
+        )}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-black uppercase text-slate-300">
+            <p className="text-xs font-bold uppercase text-slate-500">
               {getDayLabel(selection.day)}
             </p>
-            <h2 className="mt-1 text-xl font-black">
+            <h2 className="mt-1 text-lg font-bold text-slate-900">
               {roleLabels[selection.role]} {shiftLabels[selection.shiftType]}
             </h2>
-            <p className="mt-1 text-sm font-medium text-slate-300">
+            <p className="mt-1 text-sm font-medium text-slate-500">
               {shiftTimeLabels[selection.shiftType]}
             </p>
           </div>
           <button
             aria-label="Close assignment panel"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-sm font-black text-white transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-bold text-slate-600 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
             onClick={onClose}
             type="button"
           >
@@ -117,30 +133,44 @@ export function ShiftAssignmentPanel({
         </div>
       </div>
 
-      <section className="border-b border-slate-200 px-4 py-4">
+      <section className="border-b border-slate-200 px-3 py-3">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-black text-slate-950">Assigned</h3>
-          <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-black text-slate-600">
+          <h3 className="text-sm font-bold text-slate-900">Assigned</h3>
+          <span className="rounded-md bg-white px-2 py-1 text-xs font-bold text-slate-600 ring-1 ring-slate-200">
             {assignedEntries.length}
           </span>
         </div>
+        <p className="mt-1 text-xs text-slate-500">
+          Staff scheduled over 6h in a day get a 1h unpaid break by default.
+        </p>
 
         {assignedEntries.length > 0 ? (
-          <div className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200">
+          <div className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {assignedEntries.map((entry) => (
               <div className="p-3" key={entry.employee.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-black text-slate-900">
+                    <p className="truncate text-sm font-bold text-slate-900">
                       {entry.employee.name}
                     </p>
                     <p className="mt-0.5 text-xs font-semibold text-slate-500">
                       {formatShiftTimeRange(entry.startTime, entry.endTime)}
                     </p>
+                    <p className="mt-0.5 text-xs font-medium text-slate-500">
+                      Paid length{" "}
+                      {formatHours(
+                        Math.max(
+                          0,
+                          calculateShiftHours(entry.startTime, entry.endTime) -
+                            entry.breakHours,
+                        ),
+                      )}
+                      h after break
+                    </p>
                   </div>
                   <button
                     aria-label={`Remove ${entry.employee.name} from this shift`}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-sm font-black text-rose-700 transition hover:bg-rose-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-bold text-slate-600 transition hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-400"
                     onClick={() => onRemove(entry.employee.id)}
                     type="button"
                   >
@@ -148,7 +178,7 @@ export function ShiftAssignmentPanel({
                   </button>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="mt-3 grid grid-cols-3 gap-2">
                   <label className="text-xs font-bold text-slate-600">
                     Start
                     <input
@@ -179,6 +209,22 @@ export function ShiftAssignmentPanel({
                       value={entry.endTime}
                     />
                   </label>
+                  <label className="text-xs font-bold text-slate-600">
+                    Break
+                    <input
+                      className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm font-bold text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                      min={0}
+                      onChange={(event) =>
+                        onUpdateEmployeeBreak(
+                          entry.employee.id,
+                          Number(event.target.value),
+                        )
+                      }
+                      step={0.25}
+                      type="number"
+                      value={entry.breakHours}
+                    />
+                  </label>
                 </div>
               </div>
             ))}
@@ -190,12 +236,12 @@ export function ShiftAssignmentPanel({
         )}
       </section>
 
-      <section className="px-4 py-4">
+      <section className="px-3 py-3">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-sm font-black text-slate-950">Available</h3>
+          <h3 className="text-sm font-bold text-slate-900">Available</h3>
           <span
             className={cn(
-              "rounded-md border px-2 py-1 text-xs font-black",
+              "rounded-md border px-2 py-1 text-xs font-bold",
               roleStyles[selection.role].badge,
             )}
           >
@@ -208,15 +254,17 @@ export function ShiftAssignmentPanel({
             No matching staff available.
           </div>
         ) : (
-          <div className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200">
+          <div className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
             {candidates.map(
               ({
                 employee,
                 availability,
                 assignedShiftLabels,
+                overlappingShiftLabels,
                 assignedToThisShift,
               }) => {
                 const alreadyAssigned = assignedShiftLabels.length > 0;
+                const hasTimeConflict = overlappingShiftLabels.length > 0;
 
                 return (
                   <article
@@ -224,7 +272,7 @@ export function ShiftAssignmentPanel({
                     key={employee.id}
                   >
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-slate-900">
+                      <p className="truncate text-sm font-bold text-slate-900">
                         {employee.name}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-1.5">
@@ -234,15 +282,25 @@ export function ShiftAssignmentPanel({
                         <span
                           className={cn(
                             "rounded-md px-2 py-0.5 text-xs font-bold",
-                            alreadyAssigned
-                              ? "bg-amber-100 text-amber-900"
-                              : "bg-emerald-100 text-emerald-800",
+                            hasTimeConflict
+                              ? "bg-rose-50 text-rose-700"
+                              : alreadyAssigned
+                              ? "bg-amber-50 text-amber-800"
+                              : "bg-emerald-50 text-emerald-700",
                           )}
                         >
-                          {alreadyAssigned ? "assigned today" : "free"}
+                          {hasTimeConflict
+                            ? "time conflict"
+                            : alreadyAssigned
+                              ? "assigned today"
+                              : "free"}
                         </span>
                       </div>
-                      {alreadyAssigned ? (
+                      {hasTimeConflict ? (
+                        <p className="mt-1.5 text-xs font-medium text-rose-700">
+                          Already working: {overlappingShiftLabels.join(", ")}
+                        </p>
+                      ) : alreadyAssigned ? (
                         <p className="mt-1.5 text-xs font-medium text-amber-700">
                           {assignedShiftLabels.join(", ")}
                         </p>
@@ -250,16 +308,24 @@ export function ShiftAssignmentPanel({
                     </div>
 
                     <Button
-                      disabled={assignedToThisShift}
+                      disabled={assignedToThisShift || hasTimeConflict}
                       onClick={() => onAssign(employee.id)}
                       size="sm"
-                      variant={alreadyAssigned ? "warning" : "primary"}
+                      variant={
+                        hasTimeConflict
+                          ? "danger"
+                          : alreadyAssigned
+                            ? "warning"
+                            : "primary"
+                      }
                     >
                       {assignedToThisShift
                         ? "Added"
-                        : alreadyAssigned
-                          ? "Add"
-                          : "Assign"}
+                        : hasTimeConflict
+                          ? "Blocked"
+                          : alreadyAssigned
+                            ? "Add"
+                            : "Assign"}
                     </Button>
                   </article>
                 );

@@ -23,11 +23,12 @@ export function StaffHoursSummary({
 
   return (
     <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-4 py-4">
-        <p className="text-xs font-black uppercase text-slate-500">
+      <div className="border-b border-slate-200 bg-indigo-50/60 px-3 py-3">
+        <p className="text-xs font-bold uppercase text-slate-500">
           Balance
         </p>
-        <h2 className="mt-1 text-xl font-black text-slate-950">Staff hours</h2>
+        <h2 className="mt-1 text-lg font-bold text-slate-900">Staff hours</h2>
+        <p className="mt-1 text-xs text-slate-500">Highest hours first</p>
       </div>
 
       <div className="grid grid-cols-2 divide-x divide-slate-200 border-b border-slate-200">
@@ -35,7 +36,7 @@ export function StaffHoursSummary({
           <p className="text-[11px] font-bold uppercase text-slate-500">
             Total
           </p>
-          <p className="mt-1 text-lg font-black text-slate-950">
+          <p className="mt-1 text-base font-bold text-slate-900">
             {formatHours(scheduledHours)}h
           </p>
         </div>
@@ -43,7 +44,7 @@ export function StaffHoursSummary({
           <p className="text-[11px] font-bold uppercase text-slate-500">
             Staff
           </p>
-          <p className="mt-1 text-lg font-black text-slate-950">
+          <p className="mt-1 text-base font-bold text-slate-900">
             {scheduledStaff}/{employees.length}
           </p>
         </div>
@@ -54,23 +55,28 @@ export function StaffHoursSummary({
           const width = `${Math.round((hours / highestHours) * 100)}%`;
 
           return (
-            <article className="px-4 py-3" key={employee.id}>
+            <article className="px-3 py-3" key={employee.id}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-black text-slate-900">
+                  <p className="truncate text-sm font-bold text-slate-900">
                     {employee.name}
                   </p>
-                  <span
-                    className={cn(
-                      "mt-1 inline-flex rounded-md border px-2 py-0.5 text-[11px] font-bold",
-                      roleStyles[employee.role].badge,
-                    )}
-                  >
-                    {roleLabels[employee.role]}
-                  </span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {employee.roles.map((role) => (
+                      <span
+                        className={cn(
+                          "inline-flex rounded-md border px-2 py-0.5 text-[11px] font-bold",
+                          roleStyles[role].badge,
+                        )}
+                        key={role}
+                      >
+                        {roleLabels[role]}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <p className="text-sm font-black text-slate-950">
+                  <p className="text-sm font-bold text-slate-900">
                     {formatHours(hours)}h
                   </p>
                   <p className="text-[11px] font-medium text-slate-500">
@@ -82,7 +88,7 @@ export function StaffHoursSummary({
                 <div
                   className={cn(
                     "h-full rounded-full",
-                    hours > 0 ? "bg-slate-900" : "bg-slate-200",
+                    hours > 0 ? "bg-indigo-400" : "bg-slate-200",
                   )}
                   style={{ width }}
                 />

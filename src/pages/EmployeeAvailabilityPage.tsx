@@ -20,31 +20,26 @@ import {
 interface EmployeeAvailabilityPageProps {
   availabilities: Availability[];
   employee: Employee;
-  employees: Employee[];
   onBack: () => void;
-  onEmployeeChange: (employeeId: string) => void;
   onSubmitAvailability: (availability: Availability) => void;
-  onWeekChange: (weekStart: string) => void;
   weekStart: string;
 }
 
 const availabilityTone: Record<string, string> = {
-  "full day": "border-emerald-500 bg-emerald-50 text-emerald-900",
-  morning: "border-sky-500 bg-sky-50 text-sky-900",
-  night: "border-indigo-500 bg-indigo-50 text-indigo-900",
+  "full day": "border-slate-500 bg-slate-100 text-slate-900",
+  morning: "border-slate-500 bg-slate-100 text-slate-900",
+  night: "border-slate-500 bg-slate-100 text-slate-900",
   unavailable: "border-slate-400 bg-slate-100 text-slate-700",
 };
 
 export function EmployeeAvailabilityPage({
   availabilities,
   employee,
-  employees,
   onBack,
-  onEmployeeChange,
   onSubmitAvailability,
-  onWeekChange,
   weekStart,
 }: EmployeeAvailabilityPageProps) {
+  const [selectedWeek, setSelectedWeek] = useState(weekStart);
   const [draftDays, setDraftDays] = useState<DayAvailabilityMap>(
     () =>
       getEmployeeAvailability(availabilities, employee.id, weekStart)?.days ??
@@ -54,16 +49,20 @@ export function EmployeeAvailabilityPage({
 
   useEffect(() => {
     setDraftDays(
-      getEmployeeAvailability(availabilities, employee.id, weekStart)?.days ??
-        createEmptyAvailability(employee.id, weekStart).days,
+      getEmployeeAvailability(availabilities, employee.id, selectedWeek)?.days ??
+        createEmptyAvailability(employee.id, selectedWeek).days,
     );
     setSubmitted(false);
-  }, [employee.id, weekStart]);
+  }, [employee.id, selectedWeek]);
+
+  function handleWeekChange(week: string) {
+    setSelectedWeek(week);
+  }
 
   function handleSubmit() {
     onSubmitAvailability({
       employeeId: employee.id,
-      weekStart,
+      weekStart: selectedWeek,
       days: draftDays,
     });
     setSubmitted(true);
@@ -76,53 +75,44 @@ export function EmployeeAvailabilityPage({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <Button onClick={onBack} size="sm" variant="ghost">
-                Back to login
+                Logout
               </Button>
               <h1 className="mt-3 text-3xl font-black text-slate-950">
                 {employee.name}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
-                <span
-                  className={cn(
-                    "rounded-md border px-2 py-1 text-xs font-semibold",
-                    roleStyles[employee.role].badge,
-                  )}
-                >
-                  {roleLabels[employee.role]}
-                </span>
-                <span className="text-sm text-slate-500">
-                  Availability for {formatWeekRange(weekStart)}
-                </span>
+                {employee.roles.map((role) => (
+                  <span
+                    className={cn(
+                      "rounded-md border px-2 py-1 text-xs font-semibold",
+                      roleStyles[role].badge,
+                    )}
+                    key={role}
+                  >
+                    {roleLabels[role]}
+                  </span>
+                ))}
               </div>
             </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[440px]">
-              <label className="text-sm font-medium text-slate-700">
-                Mock account
-                <select
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                  onChange={(event) => onEmployeeChange(event.target.value)}
-                  value={employee.id}
-                >
-                  {employees.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <WeekSelector onChange={onWeekChange} weekStart={weekStart} />
-            </div>
+            <WeekSelector onChange={handleWeekChange} weekStart={selectedWeek} />
           </div>
         </header>
 
         {submitted ? (
-          <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-            Availability submitted for {formatWeekRange(weekStart)}.
+          <div className="mb-5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 shadow-sm">
+            Availability sent successfully for {formatWeekRange(selectedWeek)}.
           </div>
         ) : null}
 
         <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-4">
+            <h2 className="text-lg font-bold text-slate-900">
+              Availability for {formatWeekRange(selectedWeek)}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Select your availability for each day of this week.
+            </p>
+          </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
             {DAYS.map((day) => (
               <article
@@ -135,7 +125,6 @@ export function EmployeeAvailabilityPage({
                 <div className="mt-3 grid gap-2">
                   {AVAILABILITY_OPTIONS.map((option) => {
                     const selected = draftDays[day.key] === option;
-
                     return (
                       <button
                         className={cn(
@@ -143,12 +132,13 @@ export function EmployeeAvailabilityPage({
                           selected && availabilityTone[option],
                         )}
                         key={option}
-                        onClick={() =>
+                        onClick={() => {
+                          setSubmitted(false);
                           setDraftDays((current) => ({
                             ...current,
                             [day.key]: option,
-                          }))
-                        }
+                          }));
+                        }}
                         type="button"
                       >
                         {availabilityLabels[option]}
@@ -162,9 +152,18 @@ export function EmployeeAvailabilityPage({
 
           <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-600">
-              Morning is 10:00-16:00. Night is 16:00-21:00.
+              Morning is 10:00–16:00. Night is 16:00–21:00.
             </p>
-            <Button onClick={handleSubmit}>Submit availability</Button>
+            <div className="flex items-center gap-3">
+              {submitted ? (
+                <span className="text-sm font-semibold text-emerald-700">
+                  Sent successfully.
+                </span>
+              ) : null}
+              <Button onClick={handleSubmit}>
+                {submitted ? "Send again" : "Send"}
+              </Button>
+            </div>
           </div>
         </section>
       </div>

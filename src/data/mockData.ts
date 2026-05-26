@@ -1,11 +1,14 @@
 import type {
   Availability,
+  DayAvailabilityMap,
   Employee,
   PayLevelRates,
+  Role,
   ShiftAssignment,
 } from "../types/schedule";
 
-export const MOCK_WEEK_START = "2026-04-13";
+export const MOCK_WEEK_START = "2026-04-27";
+export const OWNER_ACCOUNT = { name: "Sohn", username: "sohn", password: "88888888" };
 
 export const mockPayLevelRates: PayLevelRates = {
   0: 23.5,
@@ -15,137 +18,95 @@ export const mockPayLevelRates: PayLevelRates = {
   4: 32,
 };
 
+function makeEmployee(
+  name: string,
+  roles: Role[],
+  level: Employee["level"],
+): Employee {
+  const username = name.toLowerCase().replace(/\s+/g, "");
+
+  return {
+    id: `emp-${username}`,
+    name,
+    role: roles[0],
+    roles,
+    username,
+    email: "",
+    phone: "",
+    level,
+    password: "1",
+  };
+}
+
 export const mockEmployees: Employee[] = [
-  { id: "emp-1", name: "Hana Sato", role: "waiter", level: 2 },
-  { id: "emp-2", name: "Liam Tran", role: "waiter", level: 1 },
-  { id: "emp-3", name: "Mei Chen", role: "sushi maker", level: 3 },
-  { id: "emp-4", name: "Kenji Mori", role: "sushi maker", level: 4 },
-  { id: "emp-5", name: "Priya Shah", role: "kitchen", level: 2 },
-  { id: "emp-6", name: "Noah Kim", role: "kitchen", level: 2 },
-  { id: "emp-7", name: "Sofia Nguyen", role: "waiter", level: 0 },
-  { id: "emp-8", name: "Yuki Tanaka", role: "sushi maker", level: 3 },
-  { id: "emp-9", name: "Oscar Patel", role: "kitchen", level: 1 },
+  makeEmployee("Nick", ["waiter", "kitchen"], 2),
+  makeEmployee("Chloe", ["waiter"], 1),
+  makeEmployee("Dahami", ["waiter"], 1),
+  makeEmployee("Kyra", ["waiter", "sushi maker"], 2),
+  makeEmployee("Nam", ["waiter"], 1),
+  makeEmployee("Tai", ["waiter"], 1),
+  makeEmployee("Tasha", ["waiter"], 1),
+  makeEmployee("Chang", ["sushi maker"], 3),
+  makeEmployee("Luna", ["sushi maker"], 2),
+  makeEmployee("Irenee", ["sushi maker"], 2),
+  makeEmployee("Ngoc Minh", ["sushi maker"], 3),
+  makeEmployee("Winnie", ["sushi maker"], 2),
+  makeEmployee("Lydia", ["sushi maker"], 2),
+  makeEmployee("Yuki", ["sushi maker"], 3),
+  makeEmployee("Wanice", ["sushi maker"], 2),
+  makeEmployee("Zoe", ["sushi maker"], 2),
+  makeEmployee("David", ["kitchen"], 2),
+  makeEmployee("Max", ["kitchen"], 1),
+  makeEmployee("Asher", ["kitchen"], 1),
+  makeEmployee("Mishka", ["kitchen"], 2),
 ];
 
-export const mockAvailabilities: Availability[] = [
+const availabilityPatterns: DayAvailabilityMap[] = [
   {
-    employeeId: "emp-1",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "full day",
-      tue: "morning",
-      wed: "night",
-      thu: "full day",
-      fri: "unavailable",
-      sat: "night",
-      sun: "full day",
-    },
+    mon: "full day",
+    tue: "morning",
+    wed: "night",
+    thu: "full day",
+    fri: "unavailable",
+    sat: "night",
+    sun: "full day",
   },
   {
-    employeeId: "emp-2",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "morning",
-      tue: "full day",
-      wed: "unavailable",
-      thu: "night",
-      fri: "full day",
-      sat: "morning",
-      sun: "night",
-    },
+    mon: "morning",
+    tue: "full day",
+    wed: "unavailable",
+    thu: "night",
+    fri: "full day",
+    sat: "morning",
+    sun: "night",
   },
   {
-    employeeId: "emp-3",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "full day",
-      tue: "unavailable",
-      wed: "morning",
-      thu: "full day",
-      fri: "night",
-      sat: "full day",
-      sun: "night",
-    },
+    mon: "night",
+    tue: "unavailable",
+    wed: "full day",
+    thu: "morning",
+    fri: "night",
+    sat: "full day",
+    sun: "unavailable",
   },
   {
-    employeeId: "emp-4",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "night",
-      tue: "full day",
-      wed: "full day",
-      thu: "morning",
-      fri: "unavailable",
-      sat: "night",
-      sun: "full day",
-    },
-  },
-  {
-    employeeId: "emp-5",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "full day",
-      tue: "morning",
-      wed: "night",
-      thu: "unavailable",
-      fri: "full day",
-      sat: "full day",
-      sun: "morning",
-    },
-  },
-  {
-    employeeId: "emp-6",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "unavailable",
-      tue: "full day",
-      wed: "morning",
-      thu: "night",
-      fri: "night",
-      sat: "full day",
-      sun: "full day",
-    },
-  },
-  {
-    employeeId: "emp-7",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "night",
-      tue: "night",
-      wed: "full day",
-      thu: "unavailable",
-      fri: "morning",
-      sat: "full day",
-      sun: "unavailable",
-    },
-  },
-  {
-    employeeId: "emp-8",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "morning",
-      tue: "night",
-      wed: "unavailable",
-      thu: "full day",
-      fri: "full day",
-      sat: "morning",
-      sun: "night",
-    },
-  },
-  {
-    employeeId: "emp-9",
-    weekStart: MOCK_WEEK_START,
-    days: {
-      mon: "night",
-      tue: "unavailable",
-      wed: "full day",
-      thu: "full day",
-      fri: "morning",
-      sat: "night",
-      sun: "unavailable",
-    },
+    mon: "unavailable",
+    tue: "night",
+    wed: "morning",
+    thu: "full day",
+    fri: "morning",
+    sat: "night",
+    sun: "full day",
   },
 ];
+
+export const mockAvailabilities: Availability[] = mockEmployees.map(
+  (employee, index) => ({
+    employeeId: employee.id,
+    weekStart: MOCK_WEEK_START,
+    days: availabilityPatterns[index % availabilityPatterns.length],
+  }),
+);
 
 export const mockAssignments: ShiftAssignment[] = [
   {
@@ -154,7 +115,12 @@ export const mockAssignments: ShiftAssignment[] = [
     role: "waiter",
     shiftType: "morning",
     assignedEmployees: [
-      { employeeId: "emp-1", startTime: "10:00", endTime: "16:00" },
+      {
+        employeeId: "emp-nick",
+        startTime: "10:00",
+        endTime: "16:00",
+        breakHours: 0,
+      },
     ],
   },
   {
@@ -163,7 +129,12 @@ export const mockAssignments: ShiftAssignment[] = [
     role: "sushi maker",
     shiftType: "night",
     assignedEmployees: [
-      { employeeId: "emp-4", startTime: "16:00", endTime: "21:00" },
+      {
+        employeeId: "emp-chang",
+        startTime: "16:00",
+        endTime: "21:00",
+        breakHours: 0,
+      },
     ],
   },
   {
@@ -172,7 +143,12 @@ export const mockAssignments: ShiftAssignment[] = [
     role: "kitchen",
     shiftType: "night",
     assignedEmployees: [
-      { employeeId: "emp-6", startTime: "16:00", endTime: "21:00" },
+      {
+        employeeId: "emp-david",
+        startTime: "16:00",
+        endTime: "21:00",
+        breakHours: 0,
+      },
     ],
   },
   {
@@ -181,7 +157,12 @@ export const mockAssignments: ShiftAssignment[] = [
     role: "waiter",
     shiftType: "night",
     assignedEmployees: [
-      { employeeId: "emp-7", startTime: "16:00", endTime: "21:00" },
+      {
+        employeeId: "emp-kyra",
+        startTime: "16:00",
+        endTime: "21:00",
+        breakHours: 0,
+      },
     ],
   },
 ];

@@ -4,6 +4,9 @@ import type {
   DayAvailabilityMap,
   DayKey,
   Employee,
+  EmployeeScheduleSummary,
+  PayLevelRates,
+  PenaltyRates,
   Role,
   ShiftAssignment,
   ShiftSelection,
@@ -28,6 +31,13 @@ export const shiftTimeLabels: Record<ShiftType, string> = {
   night: "16:00-21:00",
 };
 
+export const payrollPenaltyMultipliers = {
+  weekday: 1,
+  saturday: 1.25,
+  sunday: 1.5,
+  publicHoliday: 2.25,
+};
+
 export const availabilityLabels: Record<AvailabilityValue, string> = {
   "full day": "Full day",
   morning: "Morning",
@@ -37,25 +47,28 @@ export const availabilityLabels: Record<AvailabilityValue, string> = {
 
 export const roleStyles: Record<
   Role,
-  { section: string; badge: string; border: string; text: string }
+  { section: string; badge: string; border: string; shift: string; text: string }
 > = {
   waiter: {
-    section: "bg-emerald-50 border-emerald-200",
-    badge: "bg-emerald-100 text-emerald-800 border-emerald-200",
+    section: "bg-emerald-100/70 border-emerald-300",
+    badge: "bg-emerald-200 text-emerald-950 border-emerald-300",
     border: "border-emerald-300",
-    text: "text-emerald-900",
+    shift: "bg-emerald-50 border-emerald-300",
+    text: "text-emerald-800",
   },
   "sushi maker": {
-    section: "bg-sky-50 border-sky-200",
-    badge: "bg-sky-100 text-sky-800 border-sky-200",
+    section: "bg-sky-100/70 border-sky-300",
+    badge: "bg-sky-200 text-sky-950 border-sky-300",
     border: "border-sky-300",
-    text: "text-sky-900",
+    shift: "bg-sky-50 border-sky-300",
+    text: "text-sky-800",
   },
   kitchen: {
-    section: "bg-amber-50 border-amber-200",
-    badge: "bg-amber-100 text-amber-900 border-amber-200",
+    section: "bg-amber-100/80 border-amber-300",
+    badge: "bg-amber-200 text-amber-950 border-amber-300",
     border: "border-amber-300",
-    text: "text-amber-950",
+    shift: "bg-amber-50 border-amber-300",
+    text: "text-amber-800",
   },
 };
 
@@ -79,6 +92,20 @@ export function getDefaultShiftTime(shiftType: ShiftType) {
 function timeToMinutes(time: string) {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
+}
+
+function timeRangesOverlap(
+  firstStartTime: string,
+  firstEndTime: string,
+  secondStartTime: string,
+  secondEndTime: string,
+) {
+  const firstStart = timeToMinutes(normalizeRestaurantTime(firstStartTime));
+  const firstEnd = timeToMinutes(normalizeRestaurantTime(firstEndTime));
+  const secondStart = timeToMinutes(normalizeRestaurantTime(secondStartTime));
+  const secondEnd = timeToMinutes(normalizeRestaurantTime(secondEndTime));
+
+  return firstStart < secondEnd && secondStart < firstEnd;
 }
 
 export function normalizeRestaurantTime(time: string) {
@@ -143,6 +170,97 @@ function getDefaultAssignedTime(
   }
 
   return defaultTime;
+}
+
+const DAILY_BREAK_THRESHOLD_HOURS = 6;
+const DEFAULT_DAILY_BREAK_HOURS = 1;
+
+function applyDailyBreakDefault(
+  assignments: ShiftAssignment[],
+  day: DayKey,
+  employeeId: string,
+) {
+  const entries = assignments.flatMap((assignment) => {
+    if (assignment.day !== day) {
+      return [];
+    }
+
+    return assignment.assignedEmployees
+      .filter((assignedEmployee) => assignedEmployee.employeeId === employeeId)
+      .map((assignedEmployee) => ({ assignment, assignedEmployee }));
+  });
+
+  if (entries.length === 0) {
+    return assignments;
+  }
+
+  const scheduledHours = entries.reduce(
+    (total, entry) =>
+      total +
+      calculateShiftHours(
+        entry.assignedEmployee.startTime,
+        entry.assignedEmployee.endTime,
+      ),
+    0,
+  );
+  const breakHours = entries.reduce(
+    (total, entry) => total + (entry.assignedEmployee.breakHours ?? 0),
+    0,
+  );
+  const hasManualBreak = entries.some(
+    (entry) => entry.assignedEmployee.breakEdited,
+  );
+
+  if (hasManualBreak) {
+    return assignments;
+  }
+
+  if (scheduledHours <= DAILY_BREAK_THRESHOLD_HOURS) {
+    if (breakHours === 0) {
+      return assignments;
+    }
+
+    return assignments.map((assignment) => {
+      if (assignment.day !== day) {
+        return assignment;
+      }
+
+      return {
+        ...assignment,
+        assignedEmployees: assignment.assignedEmployees.map((assignedEmployee) =>
+          assignedEmployee.employeeId === employeeId
+            ? { ...assignedEmployee, breakHours: 0 }
+            : assignedEmployee,
+        ),
+      };
+    });
+  }
+
+  if (breakHours > 0) {
+    return assignments;
+  }
+
+  const targetAssignmentId =
+    entries.find((entry) => entry.assignment.shiftType === "night")?.assignment
+      .id ?? entries[0].assignment.id;
+
+  return assignments.map((assignment) => {
+    if (assignment.id !== targetAssignmentId) {
+      return assignment;
+    }
+
+    return {
+      ...assignment,
+      assignedEmployees: assignment.assignedEmployees.map((assignedEmployee) =>
+        assignedEmployee.employeeId === employeeId
+          ? {
+              ...assignedEmployee,
+              breakHours: DEFAULT_DAILY_BREAK_HOURS,
+            }
+          : assignedEmployee,
+      ),
+    };
+  });
 }
 
 export function createEmptyAvailability(
@@ -243,7 +361,13 @@ export function getAssignedEmployeeEntries(
         (item) => item.id === assignedEmployee.employeeId,
       );
 
-      return employee ? { ...assignedEmployee, employee } : null;
+      return employee
+        ? {
+            ...assignedEmployee,
+            breakHours: assignedEmployee.breakHours ?? 0,
+            employee,
+          }
+        : null;
     })
     .filter(
       (
@@ -252,6 +376,7 @@ export function getAssignedEmployeeEntries(
         employeeId: string;
         startTime: string;
         endTime: string;
+        breakHours: number;
         employee: Employee;
       } => Boolean(entry),
     );
@@ -276,6 +401,34 @@ export function getAssignedShiftLabels(
     );
 }
 
+export function getOverlappingShiftLabels(
+  schedule: WeekSchedule,
+  employeeId: string,
+  selection: ShiftSelection,
+) {
+  const targetTime = getDefaultAssignedTime(schedule, selection);
+
+  return schedule.assignments
+    .filter(
+      (assignment) =>
+        assignment.day === selection.day &&
+        assignment.assignedEmployees.some(
+          (assignedEmployee) =>
+            assignedEmployee.employeeId === employeeId &&
+            timeRangesOverlap(
+              assignedEmployee.startTime,
+              assignedEmployee.endTime,
+              targetTime.startTime,
+              targetTime.endTime,
+            ),
+        ),
+    )
+    .map(
+      (assignment) =>
+        `${roleLabels[assignment.role]} ${shiftLabels[assignment.shiftType]}`,
+    );
+}
+
 export function addEmployeeToSchedule(
   schedules: WeekSchedule[],
   weekStart: string,
@@ -287,6 +440,25 @@ export function addEmployeeToSchedule(
   );
   const existingSchedule =
     scheduleIndex >= 0 ? schedules[scheduleIndex] : { weekStart, assignments: [] };
+  const defaultTime = getDefaultAssignedTime(existingSchedule, selection);
+  const hasOverlappingAssignment = existingSchedule.assignments.some(
+    (assignment) =>
+      assignment.day === selection.day &&
+      assignment.assignedEmployees.some(
+        (assignedEmployee) =>
+          assignedEmployee.employeeId === employeeId &&
+          timeRangesOverlap(
+            assignedEmployee.startTime,
+            assignedEmployee.endTime,
+            defaultTime.startTime,
+            defaultTime.endTime,
+          ),
+      ),
+  );
+
+  if (hasOverlappingAssignment) {
+    return schedules;
+  }
 
   let updatedExistingAssignment = false;
   const assignments = existingSchedule.assignments.map((assignment) => {
@@ -309,32 +481,34 @@ export function addEmployeeToSchedule(
       return assignment;
     }
 
-    const defaultTime = getDefaultAssignedTime(existingSchedule, selection);
-
     return {
       ...assignment,
       assignedEmployees: [
         ...assignment.assignedEmployees,
-        { employeeId, ...defaultTime },
+        { employeeId, ...defaultTime, breakHours: 0 },
       ],
     };
   });
 
   if (!updatedExistingAssignment) {
-    const defaultTime = getDefaultAssignedTime(existingSchedule, selection);
-
     assignments.push({
       id: `${weekStart}-${selection.day}-${selection.role.replace(" ", "-")}-${
         selection.shiftType
       }`,
       ...selection,
-      assignedEmployees: [{ employeeId, ...defaultTime }],
+      assignedEmployees: [{ employeeId, ...defaultTime, breakHours: 0 }],
     });
   }
 
+  const assignmentsWithBreaks = applyDailyBreakDefault(
+    assignments,
+    selection.day,
+    employeeId,
+  );
+
   const updatedSchedule: WeekSchedule = {
     ...existingSchedule,
-    assignments,
+    assignments: assignmentsWithBreaks,
   };
 
   if (scheduleIndex === -1) {
@@ -361,7 +535,7 @@ export function removeEmployeeFromSchedule(
   }
 
   const existingSchedule = schedules[scheduleIndex];
-  const assignments = existingSchedule.assignments
+  const assignmentsAfterRemoval = existingSchedule.assignments
     .map((assignment) => {
       const isTargetShift =
         assignment.day === selection.day &&
@@ -380,6 +554,11 @@ export function removeEmployeeFromSchedule(
       };
     })
     .filter((assignment) => assignment.assignedEmployees.length > 0);
+  const assignments = applyDailyBreakDefault(
+    assignmentsAfterRemoval,
+    selection.day,
+    employeeId,
+  );
 
   const updatedSchedule: WeekSchedule = {
     ...existingSchedule,
@@ -406,8 +585,35 @@ export function updateAssignedEmployeeTime(
   );
   const existingSchedule =
     scheduleIndex >= 0 ? schedules[scheduleIndex] : { weekStart, assignments: [] };
+  const hasOverlappingAssignment = existingSchedule.assignments.some(
+    (assignment) => {
+      const isCurrentShift =
+        assignment.day === selection.day &&
+        assignment.role === selection.role &&
+        assignment.shiftType === selection.shiftType;
 
-  const assignments = existingSchedule.assignments.map((assignment) => {
+      if (assignment.day !== selection.day || isCurrentShift) {
+        return false;
+      }
+
+      return assignment.assignedEmployees.some(
+        (assignedEmployee) =>
+          assignedEmployee.employeeId === employeeId &&
+          timeRangesOverlap(
+            assignedEmployee.startTime,
+            assignedEmployee.endTime,
+            normalizedStartTime,
+            normalizedEndTime,
+          ),
+      );
+    },
+  );
+
+  if (hasOverlappingAssignment) {
+    return schedules;
+  }
+
+  const assignmentsAfterTimeUpdate = existingSchedule.assignments.map((assignment) => {
     const isTargetShift =
       assignment.day === selection.day &&
       assignment.role === selection.role &&
@@ -425,6 +631,67 @@ export function updateAssignedEmployeeTime(
               ...assignedEmployee,
               startTime: normalizedStartTime,
               endTime: normalizedEndTime,
+            }
+          : assignedEmployee,
+      ),
+    };
+  });
+
+  const assignments = applyDailyBreakDefault(
+    assignmentsAfterTimeUpdate,
+    selection.day,
+    employeeId,
+  );
+
+  const updatedSchedule: WeekSchedule = {
+    ...existingSchedule,
+    assignments,
+  };
+
+  if (scheduleIndex === -1) {
+    return [...schedules, updatedSchedule];
+  }
+
+  return schedules.map((schedule, index) =>
+    index === scheduleIndex ? updatedSchedule : schedule,
+  );
+}
+
+export function updateAssignedEmployeeBreak(
+  schedules: WeekSchedule[],
+  weekStart: string,
+  selection: ShiftSelection,
+  employeeId: string,
+  breakHours: number,
+) {
+  const normalizedBreakHours = Math.max(
+    0,
+    Number.isFinite(breakHours) ? breakHours : 0,
+  );
+  const scheduleIndex = schedules.findIndex(
+    (schedule) => schedule.weekStart === weekStart,
+  );
+  const existingSchedule =
+    scheduleIndex >= 0 ? schedules[scheduleIndex] : { weekStart, assignments: [] };
+
+  const assignments = existingSchedule.assignments.map((assignment) => {
+    const isTargetShift =
+      assignment.day === selection.day &&
+      assignment.role === selection.role &&
+      assignment.shiftType === selection.shiftType;
+
+    if (!isTargetShift) {
+      return assignment;
+    }
+
+    return {
+      ...assignment,
+      assignedEmployees: assignment.assignedEmployees.map((assignedEmployee) =>
+        assignedEmployee.employeeId === employeeId
+          ? {
+              ...assignedEmployee,
+              breakHours: normalizedBreakHours,
+              breakEdited: true,
             }
           : assignedEmployee,
       ),
@@ -457,8 +724,22 @@ export function updateDayNightEndTime(
   );
   const existingSchedule =
     scheduleIndex >= 0 ? schedules[scheduleIndex] : { weekStart, assignments: [] };
+  const affectedEmployeeIds = Array.from(
+    new Set(
+      existingSchedule.assignments
+        .filter(
+          (assignment) =>
+            assignment.day === day && assignment.shiftType === "night",
+        )
+        .flatMap((assignment) =>
+          assignment.assignedEmployees.map(
+            (assignedEmployee) => assignedEmployee.employeeId,
+          ),
+        ),
+    ),
+  );
 
-  const assignments = existingSchedule.assignments.map((assignment) => {
+  const assignmentsAfterEndUpdate = existingSchedule.assignments.map((assignment) => {
     if (assignment.day !== day || assignment.shiftType !== "night") {
       return assignment;
     }
@@ -471,6 +752,11 @@ export function updateDayNightEndTime(
       })),
     };
   });
+  const assignments = affectedEmployeeIds.reduce(
+    (nextAssignments, employeeId) =>
+      applyDailyBreakDefault(nextAssignments, day, employeeId),
+    assignmentsAfterEndUpdate,
+  );
 
   const updatedSchedule: WeekSchedule = {
     ...existingSchedule,
@@ -488,6 +774,65 @@ export function updateDayNightEndTime(
   return schedules.map((schedule, index) =>
     index === scheduleIndex ? updatedSchedule : schedule,
   );
+}
+
+export function applyScheduleBreakDefaults(schedule: WeekSchedule) {
+  let assignments = schedule.assignments;
+  const employeeDayKeys = new Set<string>();
+
+  schedule.assignments.forEach((assignment) => {
+    assignment.assignedEmployees.forEach((assignedEmployee) => {
+      employeeDayKeys.add(`${assignment.day}:${assignedEmployee.employeeId}`);
+    });
+  });
+
+  employeeDayKeys.forEach((key) => {
+    const [day, employeeId] = key.split(":");
+    assignments = applyDailyBreakDefault(assignments, day as DayKey, employeeId);
+  });
+
+  return {
+    ...schedule,
+    assignments,
+  };
+}
+
+export function getEmployeeScheduleSummaries(
+  schedule: WeekSchedule,
+  employees: Employee[],
+): EmployeeScheduleSummary[] {
+  const dayOrder = DAYS.reduce<Record<DayKey, number>>((order, day, index) => {
+    order[day.key] = index;
+    return order;
+  }, {} as Record<DayKey, number>);
+
+  return employees
+    .map((employee) => {
+      const shifts = schedule.assignments.flatMap((assignment) =>
+        assignment.assignedEmployees
+          .filter((assignedEmployee) => assignedEmployee.employeeId === employee.id)
+          .map((assignedEmployee) => ({
+            id: `${assignment.id}-${employee.id}`,
+            day: assignment.day,
+            role: assignment.role,
+            shiftType: assignment.shiftType,
+            startTime: assignedEmployee.startTime,
+            endTime: assignedEmployee.endTime,
+            breakHours: assignedEmployee.breakHours ?? 0,
+          })),
+      );
+
+      return {
+        employee,
+        shifts: shifts.sort(
+          (a, b) =>
+            dayOrder[a.day] - dayOrder[b.day] ||
+            a.startTime.localeCompare(b.startTime) ||
+            roleLabels[a.role].localeCompare(roleLabels[b.role]),
+        ),
+      };
+    })
+    .filter((summary) => summary.shifts.length > 0);
 }
 
 export function getEmployeeWeeklyTotals(
@@ -515,8 +860,118 @@ export function getEmployeeWeeklyTotals(
     })
     .sort(
       (a, b) =>
-        a.hours - b.hours || a.employee.name.localeCompare(b.employee.name),
+        b.hours - a.hours || a.employee.name.localeCompare(b.employee.name),
     );
+}
+
+export function getPayrollRows(
+  schedule: WeekSchedule,
+  employees: Employee[],
+  payLevelRates: PayLevelRates,
+  penaltyRates: PenaltyRates = payrollPenaltyMultipliers,
+) {
+  const phDays = new Set(schedule.publicHolidays ?? []);
+
+  return employees
+    .map((employee) => {
+      const assignedShifts = schedule.assignments.flatMap((assignment) =>
+        assignment.assignedEmployees
+          .filter((assignedEmployee) => assignedEmployee.employeeId === employee.id)
+          .map((assignedEmployee) => ({
+            ...assignedEmployee,
+            day: assignment.day,
+          })),
+      );
+
+      const paidShiftHours = (day: DayKey, startTime: string, endTime: string, breakHours: number) =>
+        phDays.has(day) ? 0 : Math.max(0, calculateShiftHours(startTime, endTime) - breakHours);
+
+      const scheduledHours = assignedShifts.reduce(
+        (total, a) => total + calculateShiftHours(a.startTime, a.endTime),
+        0,
+      );
+      const breakHours = assignedShifts.reduce(
+        (total, a) => total + (a.breakHours ?? 0),
+        0,
+      );
+      const publicHolidayHours = assignedShifts.reduce((total, a) => {
+        if (!phDays.has(a.day)) return total;
+        return total + Math.max(0, calculateShiftHours(a.startTime, a.endTime) - (a.breakHours ?? 0));
+      }, 0);
+      const weekdayHours = assignedShifts.reduce((total, a) => {
+        if (a.day === "sat" || a.day === "sun" || phDays.has(a.day)) return total;
+        return total + paidShiftHours(a.day, a.startTime, a.endTime, a.breakHours ?? 0);
+      }, 0);
+      const saturdayHours = assignedShifts.reduce((total, a) => {
+        if (a.day !== "sat" || phDays.has(a.day)) return total;
+        return total + Math.max(0, calculateShiftHours(a.startTime, a.endTime) - (a.breakHours ?? 0));
+      }, 0);
+      const sundayHours = assignedShifts.reduce((total, a) => {
+        if (a.day !== "sun" || phDays.has(a.day)) return total;
+        return total + Math.max(0, calculateShiftHours(a.startTime, a.endTime) - (a.breakHours ?? 0));
+      }, 0);
+
+      const paidHours = weekdayHours + saturdayHours + sundayHours + publicHolidayHours;
+      const hourlyRate = payLevelRates[employee.level];
+      const weekdayPay = weekdayHours * hourlyRate * penaltyRates.weekday;
+      const saturdayPay = saturdayHours * hourlyRate * penaltyRates.saturday;
+      const sundayPay = sundayHours * hourlyRate * penaltyRates.sunday;
+      const publicHolidayPay = publicHolidayHours * hourlyRate * penaltyRates.publicHoliday;
+
+      return {
+        employee,
+        scheduledHours,
+        breakHours,
+        weekdayHours,
+        saturdayHours,
+        sundayHours,
+        publicHolidayHours,
+        paidHours,
+        shiftCount: assignedShifts.length,
+        hourlyRate,
+        weekdayPay,
+        saturdayPay,
+        sundayPay,
+        publicHolidayPay,
+        grossPay: weekdayPay + saturdayPay + sundayPay + publicHolidayPay,
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.grossPay - a.grossPay ||
+        b.paidHours - a.paidHours ||
+        a.employee.name.localeCompare(b.employee.name),
+    );
+}
+
+export function getPayrollTotals(
+  schedule: WeekSchedule,
+  employees: Employee[],
+  payLevelRates: PayLevelRates,
+  penaltyRates: PenaltyRates = payrollPenaltyMultipliers,
+) {
+  return getPayrollRows(schedule, employees, payLevelRates, penaltyRates).reduce(
+    (totals, row) => ({
+      scheduledHours: totals.scheduledHours + row.scheduledHours,
+      breakHours: totals.breakHours + row.breakHours,
+      weekdayHours: totals.weekdayHours + row.weekdayHours,
+      saturdayHours: totals.saturdayHours + row.saturdayHours,
+      sundayHours: totals.sundayHours + row.sundayHours,
+      publicHolidayHours: totals.publicHolidayHours + row.publicHolidayHours,
+      paidHours: totals.paidHours + row.paidHours,
+      grossPay: totals.grossPay + row.grossPay,
+    }),
+    {
+      scheduledHours: 0,
+      breakHours: 0,
+      weekdayHours: 0,
+      saturdayHours: 0,
+      sundayHours: 0,
+      publicHolidayHours: 0,
+      paidHours: 0,
+      grossPay: 0,
+    },
+  );
 }
 
 export function formatMoney(value: number) {
